@@ -91,7 +91,7 @@ aget 附带 [yazi](https://yazi-rs.github.io/) 文件管理器插件。见 [`yaz
 
 - **theme.toml** — `.age` 文件显示 `󰈡` 图标（与 `.lock` 文件区分）
 - **aget.yazi/main.lua** — 加密/解密插件（在 yazi 内弹窗输入密码）
-- **keymap.toml** — `cs` 加密，`co` 解密
+- **keymap.toml** — `cs` 加密，`co` 解密，`cd` 安全销毁
 
 ### 安装 yazi 集成
 

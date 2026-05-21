@@ -93,7 +93,7 @@ aget ships with a [yazi](https://yazi-rs.github.io/) plugin for file-manager int
 
 - **theme.toml** — `󰈡` icon for `.age` files (distinct from `.lock` files)
 - **aget.yazi/main.lua** — Plugin for seal/open actions (passphrase input via yazi popup)
-- **keymap.toml** — `cs` to seal, `co` to open
+- **keymap.toml** — `cs` to seal, `co` to open, `cd` to destroy
 
 ### Install yazi integration
 
