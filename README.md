@@ -94,9 +94,16 @@ cat yazi/theme.toml >> ~/.config/yazi/theme.toml
 cat yazi/keymap.toml >> ~/.config/yazi/keymap.toml
 ```
 
-## Environment Variables
+## Non-interactive Usage
 
-- `AGET_PASSPHRASE` — If set, used as the passphrase instead of prompting stdin. This enables non-interactive usage (e.g., from yazi plugin).
+Passphrase is read from stdin. For scripting or plugin integration, pipe it in:
+
+```sh
+echo "mypassphrase" | aget seal secret.txt --passphrase
+echo "mypassphrase" | aget open secret.txt.age --no-wait
+```
+
+This is more secure than environment variables (which are visible to other processes via `ps eww`).
 
 ## License
 
