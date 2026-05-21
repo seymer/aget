@@ -63,7 +63,7 @@ fn seal_with_recipient(input: &Path, output: &Path, recipient: &str) -> Result<(
         .map_err(|e| anyhow::anyhow!("Invalid recipient: {}", e))?;
 
     let encryptor = age::Encryptor::with_recipients(vec![recipient])
-        .expect("recipients not empty");
+        .ok_or_else(|| anyhow::anyhow!("No recipients provided"))?;
     let mut output_file = File::create(output)
         .with_context(|| format!("Cannot create: {}", output.display()))?;
     let mut writer = encryptor.wrap_output(&mut output_file)

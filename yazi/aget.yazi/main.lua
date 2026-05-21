@@ -104,6 +104,12 @@ return {
 			end
 
 		elseif action == "destroy" then
+			local confirm, event = ya.input({
+				title = "Type 'yes' to destroy " .. url:match("[^/]+$") .. ":",
+				pos = { "center", w = 50 },
+			})
+			if event ~= 1 or confirm ~= "yes" then return end
+
 			local output = Command("aget")
 				:arg("destroy"):arg("--no-confirm"):arg(url)
 				:stdout(Command.PIPED)
