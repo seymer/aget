@@ -50,6 +50,9 @@ enum Commands {
         /// Directory to scan (default: current)
         #[arg(default_value = ".")]
         path: PathBuf,
+        /// Scan recursively
+        #[arg(short, long)]
+        recursive: bool,
     },
 }
 
@@ -60,6 +63,6 @@ fn main() -> Result<()> {
         Commands::Open { file, identity, no_wait } => commands::open(&file, identity.as_deref(), no_wait),
         Commands::Cleanup { file } => commands::cleanup(&file),
         Commands::Destroy { files } => commands::destroy(&files),
-        Commands::Status { path } => commands::status(&path),
+        Commands::Status { path, recursive } => commands::status(&path, recursive),
     }
 }

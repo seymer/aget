@@ -33,9 +33,7 @@ pub fn seal(file: &Path, recipient: Option<&str>, passphrase: bool) -> Result<()
 }
 
 fn seal_with_passphrase(input: &Path, output: &Path) -> Result<()> {
-    eprint!("Passphrase: ");
-    io::stderr().flush()?;
-    let pass = read_passphrase()?;
+    let pass = read_passphrase_with_confirm()?;
 
     let encryptor = age::Encryptor::with_user_passphrase(secrecy::Secret::new(pass));
 
@@ -82,12 +80,28 @@ fn seal_with_recipient(input: &Path, output: &Path, recipient: &str) -> Result<(
     Ok(())
 }
 
-fn read_passphrase() -> Result<String> {
-    if let Ok(pass) = std::env::var("AGET_PASSPHRASE") {
-        return Ok(pass);
-    }
+fn read_passphrase_with_confirm() -> Result<String> {
+    use std::io::IsTerminal;
     let stdin = io::stdin();
-    let line = stdin.lock().lines().next()
-        .ok_or_else(|| anyhow::anyhow!("No passphrase provided"))??;
-    Ok(line)
+
+    if stdin.is_terminal() {
+        // Interactive: prompt twice
+        eprint!("Passphrase: ");
+        io::stderr().flush()?;
+        let pass = stdin.lock().lines().next()
+            .ok_or_else(|| anyhow::anyhow!("No passphrase provided"))??;
+        eprint!("Confirm passphrase: ");
+        io::stderr().flush()?;
+        let confirm = stdin.lock().lines().next()
+            .ok_or_else(|| anyhow::anyhow!("No confirmation"))??;
+        if pass != confirm {
+            bail!("Passphrases don't match");
+        }
+        Ok(pass)
+    } else {
+        // Piped: read one line
+        let line = stdin.lock().lines().next()
+            .ok_or_else(|| anyhow::anyhow!("No passphrase provided"))??;
+        Ok(line)
+    }
 }

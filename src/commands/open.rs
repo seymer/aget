@@ -36,9 +36,9 @@ pub fn open(file: &Path, identity: Option<&Path>, no_wait: bool) -> Result<()> {
     }
 
     if no_wait {
-        // Print path to stdout for programmatic use, keep temp dir alive by leaking
+        // keep() prevents TempDir from auto-deleting; caller uses `aget cleanup`
+        let _ = tmp_dir.keep();
         println!("{}", output_path.display());
-        std::mem::forget(tmp_dir);
         return Ok(());
     }
 
@@ -73,8 +73,8 @@ fn decrypt_with_identity(input: fs::File, id_path: &Path, output_path: &Path) ->
         .map_err(|e| anyhow::anyhow!("Invalid identity file: {}", e))?
         .into_identities()
         .into_iter()
-        .filter_map(|entry| match entry {
-            age::IdentityFileEntry::Native(id) => Some(id),
+        .map(|entry| match entry {
+            age::IdentityFileEntry::Native(id) => id,
         })
         .collect();
 
@@ -93,14 +93,10 @@ fn decrypt_with_identity(input: fs::File, id_path: &Path, output_path: &Path) ->
 }
 
 fn decrypt_with_passphrase(input: fs::File, output_path: &Path) -> Result<()> {
-    let pass = if let Ok(p) = std::env::var("AGET_PASSPHRASE") {
-        p
-    } else {
-        eprint!("Passphrase: ");
-        io::stderr().flush()?;
-        io::stdin().lock().lines().next()
-            .ok_or_else(|| anyhow::anyhow!("No passphrase"))??
-    };
+    eprint!("Passphrase: ");
+    io::stderr().flush()?;
+    let pass = io::stdin().lock().lines().next()
+        .ok_or_else(|| anyhow::anyhow!("No passphrase"))??;
 
     let decryptor = match age::Decryptor::new(io::BufReader::new(input))
         .map_err(|e| anyhow::anyhow!("Decryption error: {}", e))? {

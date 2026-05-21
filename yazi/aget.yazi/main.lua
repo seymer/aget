@@ -20,19 +20,34 @@ return {
 			end
 
 			local pass, event = ya.input({
-				title = "Passphrase (seal):",
+				title = "Passphrase:",
 				pos = { "center", w = 40 },
 				obscure = true,
 			})
 			if event ~= 1 then return end
 
-			local output = Command("aget")
+			local confirm, event2 = ya.input({
+				title = "Confirm passphrase:",
+				pos = { "center", w = 40 },
+				obscure = true,
+			})
+			if event2 ~= 1 then return end
+			if pass ~= confirm then
+				ya.notify({ title = "aget", content = "Passphrases don't match", level = "error", timeout = 3 })
+				return
+			end
+
+			local child = Command("aget")
 				:arg("seal"):arg("--passphrase"):arg(url)
-				:env("AGET_PASSPHRASE", pass)
+				:stdin(Command.PIPED)
 				:stdout(Command.PIPED)
 				:stderr(Command.PIPED)
-				:output()
+				:spawn()
 
+			child:write_all(pass .. "\n")
+			child:flush()
+
+			local output = child:wait_with_output()
 			if output.status.success then
 				ya.notify({ title = "aget", content = "Sealed ✓", level = "info", timeout = 3 })
 			else
@@ -46,33 +61,29 @@ return {
 			end
 
 			local pass, event = ya.input({
-				title = "Passphrase (open):",
+				title = "Passphrase:",
 				pos = { "center", w = 40 },
 				obscure = true,
 			})
 			if event ~= 1 then return end
 
-			local output = Command("aget")
+			local child = Command("aget")
 				:arg("open"):arg("--no-wait"):arg(url)
-				:env("AGET_PASSPHRASE", pass)
+				:stdin(Command.PIPED)
 				:stdout(Command.PIPED)
 				:stderr(Command.PIPED)
-				:output()
+				:spawn()
 
+			child:write_all(pass .. "\n")
+			child:flush()
+
+			local output = child:wait_with_output()
 			if output.status.success then
-				-- stdout contains the decrypted file path
 				local path = output.stdout:gsub("%s+$", "")
 				if path ~= "" then
 					ya.emit("reveal", { Url(path) })
-					ya.notify({ title = "aget", content = "Decrypted ✓ (press Enter in notification to cleanup)", level = "info", timeout = 10 })
-					-- Clean up after a delay to give user time to view
-					local _, confirm_event = ya.input({
-						title = "Press Enter to securely delete plaintext:",
-						pos = { "center", w = 50 },
-					})
-					Command("aget"):arg("cleanup"):arg(path):output()
-					ya.notify({ title = "aget", content = "Plaintext cleaned ✓", level = "info", timeout = 3 })
 				end
+				ya.notify({ title = "aget", content = "Decrypted ✓", level = "info", timeout = 5 })
 			else
 				ya.notify({ title = "aget", content = output.stderr, level = "error", timeout = 5 })
 			end
