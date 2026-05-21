@@ -1,5 +1,7 @@
 # aget
 
+[中文文档](./README_zh.md)
+
 Secure file encryption and destruction tool powered by [age](https://age-encryption.org/).
 
 Encrypt files in-place (original securely deleted), decrypt to a temporary location that auto-cleans, or securely destroy files with multi-pass overwrite.
