@@ -1,0 +1,12 @@
+# Append to ~/.config/yazi/keymap.toml
+# Uses "a" prefix (a for aget) to avoid conflicts with common keybindings
+
+[[mgr.prepend_keymap]]
+on = ["a", "s"]
+run = "plugin aget -- seal"
+desc = "aget: seal (encrypt) file"
+
+[[mgr.prepend_keymap]]
+on = ["a", "o"]
+run = "plugin aget -- open"
+desc = "aget: open (decrypt) .age file"

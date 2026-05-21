@@ -1,0 +1,7 @@
+# Append to ~/.config/yazi/theme.toml
+# Uses nerd font "file-lock" icon (󰈡) to distinguish from .lock's plain lock ()
+
+[[filetype.rules]]
+name = "*.age"
+text = "󰈡"
+fg = "#FF8800"
