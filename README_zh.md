@@ -10,6 +10,11 @@
 cargo install --path .
 ```
 
+或从 [Releases](https://github.com/seymer/aget/releases) 下载预编译二进制。
+
+> **macOS：** 如果下载的二进制弹出 Gatekeeper 警告，运行：
+> `xattr -d com.apple.quarantine ./aget`
+
 ## 使用
 
 ### seal — 加密文件

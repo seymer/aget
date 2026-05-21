@@ -12,6 +12,11 @@ Encrypt files in-place (original securely deleted), decrypt to a temporary locat
 cargo install --path .
 ```
 
+Or download a prebuilt binary from [Releases](https://github.com/seymer/aget/releases).
+
+> **macOS:** If you get a Gatekeeper warning on downloaded binaries, run:
+> `xattr -d com.apple.quarantine ./aget`
+
 ## Usage
 
 ### seal — Encrypt a file
