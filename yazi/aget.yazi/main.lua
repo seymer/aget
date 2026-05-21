@@ -1,19 +1,20 @@
-local get_url = ya.sync(function()
+local get_state = ya.sync(function()
 	local h = cx.active.current.hovered
-	return h and tostring(h.url) or nil
+	local cwd = cx.active.current.cwd
+	return h and tostring(h.url) or nil, tostring(cwd)
 end)
 
 return {
 	entry = function(_, job)
 		local action = job.args[1]
-		local url = get_url()
+		local url, cwd = get_state()
 
 		if not url then
 			ya.notify({ title = "aget", content = "No file selected", level = "warn", timeout = 3 })
 			return
 		end
 
-		if action == "seal" then
+		if action == "seal" or action == "seal-keep" then
 			if url:match("%.age$") then
 				ya.notify({ title = "aget", content = "Already encrypted", level = "warn", timeout = 3 })
 				return
@@ -37,8 +38,11 @@ return {
 				return
 			end
 
-			local child = Command("aget")
-				:arg("seal"):arg("--passphrase"):arg(url)
+			local cmd = Command("aget"):arg("seal"):arg("--passphrase")
+			if action == "seal-keep" then
+				cmd = cmd:arg("--keep")
+			end
+			local child = cmd:arg(url)
 				:stdin(Command.PIPED)
 				:stdout(Command.PIPED)
 				:stderr(Command.PIPED)
@@ -49,7 +53,8 @@ return {
 
 			local output = child:wait_with_output()
 			if output.status.success then
-				ya.notify({ title = "aget", content = "Sealed ✓", level = "info", timeout = 3 })
+				local msg = action == "seal-keep" and "Sealed ✓ (kept)" or "Sealed ✓"
+				ya.notify({ title = "aget", content = msg, level = "info", timeout = 3 })
 			else
 				ya.notify({ title = "aget", content = output.stderr, level = "error", timeout = 5 })
 			end
@@ -68,7 +73,7 @@ return {
 			if event ~= 1 then return end
 
 			local child = Command("aget")
-				:arg("open"):arg("--output"):arg("/tmp")
+				:arg("open"):arg("--output"):arg(cwd)
 				:arg(url)
 				:stdin(Command.PIPED)
 				:stdout(Command.PIPED)

@@ -3,12 +3,17 @@
 [[mgr.prepend_keymap]]
 on = ["c", "s"]
 run = "plugin aget -- seal"
-desc = "aget: seal (encrypt) file"
+desc = "aget: seal (encrypt + delete original)"
+
+[[mgr.prepend_keymap]]
+on = ["c", "k"]
+run = "plugin aget -- seal-keep"
+desc = "aget: seal (encrypt + keep original)"
 
 [[mgr.prepend_keymap]]
 on = ["c", "o"]
 run = "plugin aget -- open"
-desc = "aget: open (decrypt) .age file"
+desc = "aget: open (decrypt to current dir)"
 
 [[mgr.prepend_keymap]]
 on = ["c", "d"]
