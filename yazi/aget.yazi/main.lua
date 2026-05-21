@@ -59,7 +59,7 @@ return {
 				ya.notify({ title = "aget", content = output.stderr, level = "error", timeout = 5 })
 			end
 
-		elseif action == "open" then
+		elseif action == "open" or action == "peek" then
 			if not url:match("%.age$") then
 				ya.notify({ title = "aget", content = "Not an .age file", level = "warn", timeout = 3 })
 				return
@@ -72,26 +72,35 @@ return {
 			})
 			if event ~= 1 then return end
 
-			local child = Command("aget")
-				:arg("open"):arg("--output"):arg(cwd)
-				:arg(url)
-				:stdin(Command.PIPED)
-				:stdout(Command.PIPED)
-				:stderr(Command.PIPED)
-				:spawn()
-
-			child:write_all(pass .. "\n")
-			child:flush()
-
-			local output = child:wait_with_output()
-			if output.status.success then
-				local path = output.stdout:gsub("%s+$", "")
-				if path ~= "" then
-					ya.emit("reveal", { Url(path) })
-				end
-				ya.notify({ title = "aget", content = "Decrypted ✓", level = "info", timeout = 3 })
+			if action == "peek" then
+				-- Decrypt to /tmp, view, then securely delete (block mode)
+				ya.emit("shell", {
+					"echo " .. ya.quote(pass) .. " | aget open " .. ya.quote(url),
+					block = true,
+				})
 			else
-				ya.notify({ title = "aget", content = output.stderr, level = "error", timeout = 5 })
+				-- Decrypt to current directory, keep the file
+				local child = Command("aget")
+					:arg("open"):arg("--output"):arg(cwd)
+					:arg(url)
+					:stdin(Command.PIPED)
+					:stdout(Command.PIPED)
+					:stderr(Command.PIPED)
+					:spawn()
+
+				child:write_all(pass .. "\n")
+				child:flush()
+
+				local output = child:wait_with_output()
+				if output.status.success then
+					local path = output.stdout:gsub("%s+$", "")
+					if path ~= "" then
+						ya.emit("reveal", { Url(path) })
+					end
+					ya.notify({ title = "aget", content = "Decrypted ✓", level = "info", timeout = 3 })
+				else
+					ya.notify({ title = "aget", content = output.stderr, level = "error", timeout = 5 })
+				end
 			end
 
 		elseif action == "destroy" then

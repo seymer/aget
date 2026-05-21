@@ -13,7 +13,12 @@ desc = "aget: seal (encrypt + keep original)"
 [[mgr.prepend_keymap]]
 on = ["c", "o"]
 run = "plugin aget -- open"
-desc = "aget: open (decrypt to current dir)"
+desc = "aget: decrypt to current dir"
+
+[[mgr.prepend_keymap]]
+on = ["c", "p"]
+run = "plugin aget -- peek"
+desc = "aget: peek (decrypt, view, auto-delete)"
 
 [[mgr.prepend_keymap]]
 on = ["c", "d"]
