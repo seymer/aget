@@ -1,8 +1,10 @@
 use anyhow::{Context, Result};
 use rand::RngCore;
 use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::io::{Seek, Write};
 use std::path::Path;
+
+const BUF_SIZE: usize = 1024 * 1024; // 1MB buffer
 
 /// Securely delete a file by overwriting with random data then removing.
 pub fn secure_delete(path: &Path, passes: u32) -> Result<()> {
@@ -11,29 +13,32 @@ pub fn secure_delete(path: &Path, passes: u32) -> Result<()> {
     let len = metadata.len() as usize;
 
     if len > 0 {
-        let mut buf = vec![0u8; len.min(64 * 1024)];
+        let mut buf = vec![0u8; len.min(BUF_SIZE)];
+        let mut rng = rand::thread_rng();
+
+        let mut file = OpenOptions::new().write(true).open(path)
+            .with_context(|| format!("Cannot open for overwrite: {}", path.display()))?;
 
         // Random passes
         for _ in 0..passes {
-            let mut file = OpenOptions::new().write(true).open(path)
-                .with_context(|| format!("Cannot open for overwrite: {}", path.display()))?;
+            file.seek(std::io::SeekFrom::Start(0))?;
             let mut remaining = len;
             while remaining > 0 {
                 let chunk = remaining.min(buf.len());
-                rand::thread_rng().fill_bytes(&mut buf[..chunk]);
+                rng.fill_bytes(&mut buf[..chunk]);
                 file.write_all(&buf[..chunk])?;
                 remaining -= chunk;
             }
             file.sync_all()?;
         }
 
-        // Final zero pass
-        let mut file = OpenOptions::new().write(true).open(path)?;
-        let zeros = vec![0u8; len.min(64 * 1024)];
+        // Final zero pass (reuse buf, fill with zeros)
+        buf.fill(0);
+        file.seek(std::io::SeekFrom::Start(0))?;
         let mut remaining = len;
         while remaining > 0 {
-            let chunk = remaining.min(zeros.len());
-            file.write_all(&zeros[..chunk])?;
+            let chunk = remaining.min(buf.len());
+            file.write_all(&buf[..chunk])?;
             remaining -= chunk;
         }
         file.sync_all()?;
