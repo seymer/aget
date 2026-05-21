@@ -13,7 +13,7 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Encrypt file with age and securely delete the original
+    /// Encrypt file with age (original securely deleted by default)
     Seal {
         /// File to encrypt
         file: PathBuf,
@@ -23,27 +23,34 @@ enum Commands {
         /// Use passphrase instead of key
         #[arg(short, long)]
         passphrase: bool,
+        /// Keep the original file (don't delete)
+        #[arg(short, long)]
+        keep: bool,
+        /// Number of overwrite passes for secure deletion (default: 3)
+        #[arg(long, default_value = "3")]
+        passes: u32,
     },
-    /// Decrypt .age file, open it, then securely delete plaintext
+    /// Decrypt .age file
     Open {
         /// Encrypted .age file
         file: PathBuf,
         /// Identity file for decryption
         #[arg(short, long)]
         identity: Option<PathBuf>,
-        /// Don't wait for Enter; print decrypted path to stdout and exit
-        #[arg(long)]
-        no_wait: bool,
+        /// Output directory (default: temp dir with auto-cleanup)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
     },
-    /// Securely delete a previously decrypted temp file
-    Cleanup {
-        /// Path to the temp file (from --no-wait output)
-        file: PathBuf,
-    },
-    /// Securely delete a file
+    /// Securely delete files
     Destroy {
         /// Files to destroy
         files: Vec<PathBuf>,
+        /// Skip confirmation prompt
+        #[arg(long)]
+        no_confirm: bool,
+        /// Number of overwrite passes (default: 3)
+        #[arg(long, default_value = "3")]
+        passes: u32,
     },
     /// Show encryption status of files in a directory
     Status {
@@ -59,10 +66,17 @@ enum Commands {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Seal { file, recipient, passphrase } => commands::seal(&file, recipient.as_deref(), passphrase),
-        Commands::Open { file, identity, no_wait } => commands::open(&file, identity.as_deref(), no_wait),
-        Commands::Cleanup { file } => commands::cleanup(&file),
-        Commands::Destroy { files } => commands::destroy(&files),
-        Commands::Status { path, recursive } => commands::status(&path, recursive),
+        Commands::Seal { file, recipient, passphrase, keep, passes } => {
+            commands::seal(&file, recipient.as_deref(), passphrase, keep, passes)
+        }
+        Commands::Open { file, identity, output } => {
+            commands::open(&file, identity.as_deref(), output.as_deref())
+        }
+        Commands::Destroy { files, no_confirm, passes } => {
+            commands::destroy(&files, no_confirm, passes)
+        }
+        Commands::Status { path, recursive } => {
+            commands::status(&path, recursive)
+        }
     }
 }

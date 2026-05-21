@@ -27,42 +27,46 @@ aget seal secret.txt --passphrase
 
 # With recipient public key
 aget seal secret.txt --recipient age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
+
+# Keep original file (don't delete)
+aget seal secret.txt --passphrase --keep
+
+# Fast deletion (1 pass instead of default 3)
+aget seal secret.txt --passphrase --passes 1
 ```
 
-The original file is securely deleted after encryption. Output: `secret.txt.age`
+The original file is securely deleted after encryption (unless `--keep` is used). Output: `secret.txt.age`
 
-### open — Decrypt and view
+### open — Decrypt a file
 
 ```sh
-# Passphrase-encrypted file
+# Interactive: decrypt, view, then auto-cleanup
 aget open secret.txt.age
 
-# Key-encrypted file
+# With identity file
 aget open secret.txt.age --identity ~/.age/key.txt
 
-# Non-interactive: decrypt and print path (for scripts/plugins)
-aget open secret.txt.age --no-wait
+# Decrypt to a specific directory (no auto-cleanup)
+aget open secret.txt.age --output ./decrypted/
 ```
 
-Decrypts to a temporary directory. Press Enter when done — the plaintext is securely deleted.
+Without `--output`: decrypts to a temporary directory. Press Enter when done — the plaintext is securely deleted.
 
-With `--no-wait`, prints the decrypted file path to stdout and exits immediately. Use `cleanup` to securely delete afterwards.
-
-### cleanup — Securely delete a decrypted temp file
-
-```sh
-aget cleanup /tmp/.tmpXXXXXX/secret.txt
-```
-
-Securely deletes a file previously created by `open --no-wait`. Used by the yazi plugin to clean up after viewing.
+With `--output`: decrypts to the specified directory, prints the path to stdout, and exits. Use `destroy` to clean up later.
 
 ### destroy — Securely delete files
 
 ```sh
 aget destroy file1.txt file2.txt
+
+# Skip confirmation (for scripts/plugins)
+aget destroy file.txt --no-confirm
+
+# Control overwrite passes
+aget destroy file.txt --no-confirm --passes 7
 ```
 
-Prompts for confirmation, then overwrites each file with 3 passes of random data + 1 pass of zeros before removing.
+Prompts for confirmation (unless `--no-confirm`), then overwrites each file before removing.
 
 ### status — Show encryption status
 
@@ -76,7 +80,7 @@ Lists files in a directory, showing which are encrypted (`.age`) and which are p
 ## Secure Deletion
 
 Files are overwritten with:
-1. 3 passes of cryptographically random data
+1. N passes of cryptographically random data (default: 3, configurable via `--passes`)
 2. 1 pass of zeros
 3. `fsync` after each pass
 4. File removed
@@ -108,7 +112,7 @@ Passphrase is read from stdin. For scripting or plugin integration, pipe it in:
 
 ```sh
 echo "mypassphrase" | aget seal secret.txt --passphrase
-echo "mypassphrase" | aget open secret.txt.age --no-wait
+echo "mypassphrase" | aget open secret.txt.age --output ./out/
 ```
 
 This is more secure than environment variables (which are visible to other processes via `ps eww`).

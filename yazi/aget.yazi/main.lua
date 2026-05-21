@@ -67,8 +67,10 @@ return {
 			})
 			if event ~= 1 then return end
 
+			-- Decrypt to /tmp via --output, then reveal
 			local child = Command("aget")
-				:arg("open"):arg("--no-wait"):arg(url)
+				:arg("open"):arg("--output"):arg("/tmp")
+				:arg(url)
 				:stdin(Command.PIPED)
 				:stdout(Command.PIPED)
 				:stderr(Command.PIPED)
@@ -83,7 +85,7 @@ return {
 				if path ~= "" then
 					ya.emit("reveal", { Url(path) })
 				end
-				ya.notify({ title = "aget", content = "Decrypted ✓", level = "info", timeout = 5 })
+				ya.notify({ title = "aget", content = "Decrypted ✓ (use destroy to cleanup)", level = "info", timeout = 5 })
 			else
 				ya.notify({ title = "aget", content = output.stderr, level = "error", timeout = 5 })
 			end

@@ -5,7 +5,7 @@ use std::path::Path;
 
 use super::secure_delete::secure_delete;
 
-pub fn open(file: &Path, identity: Option<&Path>, no_wait: bool) -> Result<()> {
+pub fn open(file: &Path, identity: Option<&Path>, output: Option<&Path>) -> Result<()> {
     if !file.exists() {
         bail!("File not found: {}", file.display());
     }
@@ -15,53 +15,46 @@ pub fn open(file: &Path, identity: Option<&Path>, no_wait: bool) -> Result<()> {
 
     // Determine output filename (strip .age)
     let stem = file.with_extension("");
-    let tmp_dir = tempfile::tempdir().context("Cannot create temp directory")?;
-    let output_path = tmp_dir.path().join(
-        stem.file_name().unwrap_or_default()
-    );
+    let filename = stem.file_name().unwrap_or_default();
 
-    // Decrypt using streaming IO
-    let encrypted_file = fs::File::open(file).context("Cannot read encrypted file")?;
-    if let Some(id_path) = identity {
-        decrypt_with_identity(encrypted_file, id_path, &output_path)?;
-    } else {
-        decrypt_with_passphrase(encrypted_file, &output_path)?;
-    }
-
-    // Set restrictive permissions
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(&output_path, fs::Permissions::from_mode(0o600))?;
-    }
-
-    if no_wait {
-        // keep() prevents TempDir from auto-deleting; caller uses `aget cleanup`
-        let _ = tmp_dir.keep();
+    if let Some(out_dir) = output {
+        // --output mode: decrypt to specified directory, no auto-cleanup
+        if !out_dir.exists() {
+            fs::create_dir_all(out_dir)?;
+        }
+        let output_path = out_dir.join(filename);
+        decrypt_to(file, identity, &output_path)?;
         println!("{}", output_path.display());
-        return Ok(());
+    } else {
+        // Default: decrypt to temp dir, wait for user, then securely delete
+        let tmp_dir = tempfile::tempdir().context("Cannot create temp directory")?;
+        let output_path = tmp_dir.path().join(filename);
+        decrypt_to(file, identity, &output_path)?;
+
+        eprintln!("✓ Decrypted to: {}", output_path.display());
+        eprintln!("Press Enter when done (plaintext will be securely deleted)...");
+        io::stderr().flush()?;
+        let _ = io::stdin().lock().lines().next();
+
+        secure_delete(&output_path, 3)?;
+        eprintln!("✓ Plaintext securely deleted");
     }
-
-    eprintln!("✓ Decrypted to: {}", output_path.display());
-    eprintln!("Press Enter when done (plaintext will be securely deleted)...");
-    io::stderr().flush()?;
-    let _ = io::stdin().lock().lines().next();
-
-    // Securely delete plaintext
-    secure_delete(&output_path)?;
-    eprintln!("✓ Plaintext securely deleted");
     Ok(())
 }
 
-/// Clean up a previously decrypted temp file (used by --no-wait callers)
-pub fn cleanup(path: &Path) -> Result<()> {
-    if !path.exists() {
-        return Ok(());
+fn decrypt_to(file: &Path, identity: Option<&Path>, output_path: &Path) -> Result<()> {
+    let encrypted_file = fs::File::open(file).context("Cannot read encrypted file")?;
+
+    if let Some(id_path) = identity {
+        decrypt_with_identity(encrypted_file, id_path, output_path)?;
+    } else {
+        decrypt_with_passphrase(encrypted_file, output_path)?;
     }
-    secure_delete(path)?;
-    // Also remove parent temp dir if empty
-    if let Some(parent) = path.parent() {
-        let _ = fs::remove_dir(parent);
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(output_path, fs::Permissions::from_mode(0o600))?;
     }
     Ok(())
 }

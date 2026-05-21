@@ -1,11 +1,11 @@
 use anyhow::{bail, Context, Result};
 use std::fs::{self, File};
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead, IsTerminal, Write};
 use std::path::Path;
 
 use super::secure_delete::secure_delete;
 
-pub fn seal(file: &Path, recipient: Option<&str>, passphrase: bool) -> Result<()> {
+pub fn seal(file: &Path, recipient: Option<&str>, passphrase: bool, keep: bool, passes: u32) -> Result<()> {
     if !file.exists() {
         bail!("File not found: {}", file.display());
     }
@@ -25,10 +25,13 @@ pub fn seal(file: &Path, recipient: Option<&str>, passphrase: bool) -> Result<()
         bail!("Specify --recipient or --passphrase");
     }
 
-    // Securely delete original
-    eprintln!("Securely deleting original: {}", file.display());
-    secure_delete(file)?;
-    eprintln!("✓ Sealed: {}", output_path.display());
+    if keep {
+        eprintln!("✓ Sealed: {} (original kept)", output_path.display());
+    } else {
+        eprintln!("Securely deleting original: {}", file.display());
+        secure_delete(file, passes)?;
+        eprintln!("✓ Sealed: {}", output_path.display());
+    }
     Ok(())
 }
 
@@ -36,7 +39,6 @@ fn seal_with_passphrase(input: &Path, output: &Path) -> Result<()> {
     let pass = read_passphrase_with_confirm()?;
 
     let encryptor = age::Encryptor::with_user_passphrase(secrecy::Secret::new(pass));
-
     let mut output_file = File::create(output)
         .with_context(|| format!("Cannot create: {}", output.display()))?;
     let mut writer = encryptor.wrap_output(&mut output_file)
@@ -62,7 +64,6 @@ fn seal_with_recipient(input: &Path, output: &Path, recipient: &str) -> Result<(
 
     let encryptor = age::Encryptor::with_recipients(vec![recipient])
         .expect("recipients not empty");
-
     let mut output_file = File::create(output)
         .with_context(|| format!("Cannot create: {}", output.display()))?;
     let mut writer = encryptor.wrap_output(&mut output_file)
@@ -81,11 +82,9 @@ fn seal_with_recipient(input: &Path, output: &Path, recipient: &str) -> Result<(
 }
 
 fn read_passphrase_with_confirm() -> Result<String> {
-    use std::io::IsTerminal;
     let stdin = io::stdin();
 
     if stdin.is_terminal() {
-        // Interactive: prompt twice
         eprint!("Passphrase: ");
         io::stderr().flush()?;
         let pass = stdin.lock().lines().next()
@@ -99,7 +98,6 @@ fn read_passphrase_with_confirm() -> Result<String> {
         }
         Ok(pass)
     } else {
-        // Piped: read one line
         let line = stdin.lock().lines().next()
             .ok_or_else(|| anyhow::anyhow!("No passphrase provided"))??;
         Ok(line)

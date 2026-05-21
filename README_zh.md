@@ -25,42 +25,46 @@ aget seal secret.txt --passphrase
 
 # 使用接收方公钥
 aget seal secret.txt --recipient age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
+
+# 保留原文件（不删除）
+aget seal secret.txt --passphrase --keep
+
+# 快速删除（1 轮覆写，默认 3 轮）
+aget seal secret.txt --passphrase --passes 1
 ```
 
-加密后原文件被安全删除。输出：`secret.txt.age`
+加密后原文件被安全删除（除非使用 `--keep`）。输出：`secret.txt.age`
 
-### open — 解密查看
+### open — 解密文件
 
 ```sh
-# 密码加密的文件
+# 交互模式：解密、查看、自动清理
 aget open secret.txt.age
 
-# 密钥加密的文件
+# 使用密钥文件
 aget open secret.txt.age --identity ~/.age/key.txt
 
-# 非交互模式：解密后输出路径（供脚本/插件使用）
-aget open secret.txt.age --no-wait
+# 解密到指定目录（不自动清理）
+aget open secret.txt.age --output ./decrypted/
 ```
 
-解密到临时目录。查看完毕按 Enter，明文将被安全删除。
+不带 `--output`：解密到临时目录，查看完毕按 Enter，明文被安全删除。
 
-使用 `--no-wait` 时，输出解密文件路径后立即退出。之后用 `cleanup` 安全删除。
-
-### cleanup — 安全删除解密的临时文件
-
-```sh
-aget cleanup /tmp/.tmpXXXXXX/secret.txt
-```
-
-安全删除由 `open --no-wait` 创建的临时文件。供 yazi 插件查看后清理使用。
+带 `--output`：解密到指定目录，输出路径到 stdout，不自动清理。之后用 `destroy` 删除。
 
 ### destroy — 安全销毁文件
 
 ```sh
 aget destroy file1.txt file2.txt
+
+# 跳过确认（供脚本/插件使用）
+aget destroy file.txt --no-confirm
+
+# 控制覆写轮数
+aget destroy file.txt --no-confirm --passes 7
 ```
 
-确认后，对每个文件进行 3 轮随机数据覆写 + 1 轮零覆写，然后删除。
+确认后（除非 `--no-confirm`），覆写并删除每个文件。
 
 ### status — 查看加密状态
 
@@ -74,7 +78,7 @@ aget status . --recursive
 ## 安全删除机制
 
 文件覆写流程：
-1. 3 轮加密随机数据覆写
+1. N 轮加密随机数据覆写（默认 3 轮，可通过 `--passes` 配置）
 2. 1 轮全零覆写
 3. 每轮后 `fsync` 刷盘
 4. 删除文件
@@ -106,7 +110,7 @@ cat yazi/keymap.toml >> ~/.config/yazi/keymap.toml
 
 ```sh
 echo "mypassphrase" | aget seal secret.txt --passphrase
-echo "mypassphrase" | aget open secret.txt.age --no-wait
+echo "mypassphrase" | aget open secret.txt.age --output ./out/
 ```
 
 这比环境变量更安全（环境变量可通过 `ps eww` 被其他进程看到）。
