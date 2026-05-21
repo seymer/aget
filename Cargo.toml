@@ -3,6 +3,10 @@ name = "aget"
 version = "0.1.0"
 edition = "2021"
 description = "Secure file encryption and destruction tool powered by age"
+license = "MIT"
+repository = "https://github.com/seymer/aget"
+keywords = ["encryption", "age", "secure-delete", "cli"]
+categories = ["command-line-utilities", "cryptography"]
 
 [dependencies]
 age = { version = "0.10", features = ["armor"] }

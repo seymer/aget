@@ -61,9 +61,10 @@ Prompts for confirmation, then overwrites each file with 3 passes of random data
 
 ```sh
 aget status .
+aget status . --recursive
 ```
 
-Lists files in a directory, showing which are encrypted (`.age`) and which are plaintext.
+Lists files in a directory, showing which are encrypted (`.age`) and which are plaintext. Use `-r` to scan subdirectories.
 
 ## Secure Deletion
 
