@@ -32,9 +32,22 @@ aget open secret.txt.age
 
 # Key-encrypted file
 aget open secret.txt.age --identity ~/.age/key.txt
+
+# Non-interactive: decrypt and print path (for scripts/plugins)
+aget open secret.txt.age --no-wait
 ```
 
 Decrypts to a temporary directory. Press Enter when done — the plaintext is securely deleted.
+
+With `--no-wait`, prints the decrypted file path to stdout and exits immediately. Use `cleanup` to securely delete afterwards.
+
+### cleanup — Securely delete a decrypted temp file
+
+```sh
+aget cleanup /tmp/.tmpXXXXXX/secret.txt
+```
+
+Securely deletes a file previously created by `open --no-wait`. Used by the yazi plugin to clean up after viewing.
 
 ### destroy — Securely delete files
 
@@ -67,8 +80,8 @@ Files are overwritten with:
 aget ships with a [yazi](https://yazi-rs.github.io/) plugin for file-manager integration. See [`yazi/`](./yazi/) for:
 
 - **theme.toml** — `󰈡` icon for `.age` files (distinct from `.lock` files)
-- **aget.yazi/init.lua** — Plugin for seal/open actions
-- **keymap.toml** — `es` to seal, `eo` to open
+- **aget.yazi/main.lua** — Plugin for seal/open actions (passphrase input via yazi popup)
+- **keymap.toml** — `cs` to seal, `co` to open
 
 ### Install yazi integration
 
@@ -80,6 +93,10 @@ cp -r yazi/aget.yazi ~/.config/yazi/plugins/
 cat yazi/theme.toml >> ~/.config/yazi/theme.toml
 cat yazi/keymap.toml >> ~/.config/yazi/keymap.toml
 ```
+
+## Environment Variables
+
+- `AGET_PASSPHRASE` — If set, used as the passphrase instead of prompting stdin. This enables non-interactive usage (e.g., from yazi plugin).
 
 ## License
 

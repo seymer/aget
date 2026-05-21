@@ -1,7 +1,12 @@
 # Append to ~/.config/yazi/theme.toml
-# Uses nerd font "file-lock" icon (󰈡) to distinguish from .lock's plain lock ()
 
+# .age encrypted files: orange highlight
 [[filetype.rules]]
 name = "*.age"
-text = "󰈡"
 fg = "#FF8800"
+
+# Icon for .age files (nerd font file-lock 󰈡, distinct from .lock's  icon)
+[icon]
+prepend_exts = [
+  { name = "age", text = "󰈡", fg = "#FF8800" },
+]

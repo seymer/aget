@@ -6,5 +6,6 @@ mod secure_delete;
 
 pub use seal::seal;
 pub use open::open;
+pub use open::cleanup;
 pub use destroy::destroy;
 pub use status::status;

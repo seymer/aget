@@ -31,6 +31,14 @@ enum Commands {
         /// Identity file for decryption
         #[arg(short, long)]
         identity: Option<PathBuf>,
+        /// Don't wait for Enter; print decrypted path to stdout and exit
+        #[arg(long)]
+        no_wait: bool,
+    },
+    /// Securely delete a previously decrypted temp file
+    Cleanup {
+        /// Path to the temp file (from --no-wait output)
+        file: PathBuf,
     },
     /// Securely delete a file
     Destroy {
@@ -49,7 +57,8 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Commands::Seal { file, recipient, passphrase } => commands::seal(&file, recipient.as_deref(), passphrase),
-        Commands::Open { file, identity } => commands::open(&file, identity.as_deref()),
+        Commands::Open { file, identity, no_wait } => commands::open(&file, identity.as_deref(), no_wait),
+        Commands::Cleanup { file } => commands::cleanup(&file),
         Commands::Destroy { files } => commands::destroy(&files),
         Commands::Status { path } => commands::status(&path),
     }

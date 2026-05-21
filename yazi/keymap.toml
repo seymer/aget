@@ -1,12 +1,13 @@
 # Append to ~/.config/yazi/keymap.toml
-# Uses "a" prefix (a for aget) to avoid conflicts with common keybindings
+# Uses "c" prefix (c for crypto)
+# Default yazi has cc/cd/cf/cn but no cs/co, so no conflict
 
 [[mgr.prepend_keymap]]
-on = ["a", "s"]
+on = ["c", "s"]
 run = "plugin aget -- seal"
 desc = "aget: seal (encrypt) file"
 
 [[mgr.prepend_keymap]]
-on = ["a", "o"]
+on = ["c", "o"]
 run = "plugin aget -- open"
 desc = "aget: open (decrypt) .age file"
